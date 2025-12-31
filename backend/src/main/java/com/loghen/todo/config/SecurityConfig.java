@@ -2,7 +2,9 @@ package com.loghen.todo.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.web.SecurityFilterChain;
@@ -17,16 +19,21 @@ public class SecurityConfig {
             // For now, we disable CSRF because we're building a stateless API (JWT later)
             .csrf(csrf -> csrf.disable())
 
-            // Allow health endpoint without auth
+            // Public endpoints
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/health").permitAll()
+                .requestMatchers("/health", "/api/auth/**").permitAll()
                 .anyRequest().authenticated()
             )
 
-            // Disable default login UI redirect; return 401 for protected endpoints instead
+            // No browser login form; return 401 instead
             .httpBasic(Customizer.withDefaults())
             .formLogin(form -> form.disable());
 
         return http.build();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 }
