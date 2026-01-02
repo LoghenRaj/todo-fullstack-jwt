@@ -1,6 +1,7 @@
+// AuthService.java
 package com.loghen.todo.auth;
 
-import com.loghen.todo.security.JwtUtil;
+import com.loghen.todo.security.JwtService;
 import com.loghen.todo.user.User;
 import com.loghen.todo.user.UserRepository;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,33 +15,30 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
+    private final JwtService jwtService;
 
     public AuthService(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            JwtUtil jwtUtil
+            JwtService jwtService
     ) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
+        this.jwtService = jwtService;
     }
 
-    public String register(String username, String rawPassword) {
+    public String register(String username, String password) {
         if (userRepository.existsByUsername(username)) {
-            throw new IllegalArgumentException("Username already exists");
+            throw new RuntimeException("Username already exists");
         }
 
-        User user = new User();
-        user.setUsername(username);
-        user.setPassword(passwordEncoder.encode(rawPassword));
-        user.setRole("USER");
-
+        User user = new User(username, passwordEncoder.encode(password), "USER");
         userRepository.save(user);
 
-        return jwtUtil.generateToken(username);
+        // generate JWT after successful register
+        return jwtService.generateToken(username);
     }
 
     public String login(String username, String password) {
@@ -48,6 +46,7 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(username, password)
         );
 
-        return jwtUtil.generateToken(username);
+        // generate JWT after successful login
+        return jwtService.generateToken(username);
     }
 }
