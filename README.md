@@ -35,5 +35,25 @@ A fullstack Todo application with:
   - Delete todo
 - Todos are user-scoped (different users do not see each other’s todos)
 
+## Project Structure
+todo-fullstack-jwt/
+backend/ # Spring Boot API
+frontend/ # React UI (Vite)
 
+
+
+## Prerequisites
+
+- Java 17 installed
+- Maven wrapper included (`./mvnw`)
+- Node.js + npm installed
+- MySQL running locally
+
+
+## Backend Setup (Spring Boot)
+
+### 1) Create database
+Create a MySQL database
+```sql
+CREATE DATABASE todo_app;
 
