@@ -1,13 +1,12 @@
 package com.loghen.todo.todo;
 
+import com.loghen.todo.common.NotFoundException;
 import com.loghen.todo.todo.dto.TodoDtos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Sort;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -33,7 +32,9 @@ public class TodoService {
         log.debug("List todos: user={}, q={}, completed={}, sortBy={}, dir={}", username, query, completed, sortBy, dir);
 
         if (hasQ && completed != null) {
-            return todoRepository.findByOwnerUsernameAndCompletedAndTitleContainingIgnoreCase(username, completed, query, sort);
+            return todoRepository.findByOwnerUsernameAndCompletedAndTitleContainingIgnoreCase(
+                    username, completed, query, sort
+            );
         }
         if (hasQ) {
             return todoRepository.findByOwnerUsernameAndTitleContainingIgnoreCase(username, query, sort);
@@ -46,7 +47,7 @@ public class TodoService {
 
     public Todo create(String username, String title) {
         if (title == null || title.trim().isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title is required");
+            throw new IllegalArgumentException("Title is required");
         }
 
         Todo todo = new Todo(title.trim(), username);
@@ -59,21 +60,21 @@ public class TodoService {
     @Transactional
     public Todo update(String username, Long id, TodoDtos.UpdateTodoRequest req) {
         if (id == null || id <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid todo id");
+            throw new IllegalArgumentException("Invalid todo id");
         }
         if (req == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Request body is required");
+            throw new IllegalArgumentException("Request body is required");
         }
 
         Todo todo = todoRepository.findByIdAndOwnerUsername(id, username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found"));
+                .orElseThrow(() -> new NotFoundException("Todo not found"));
 
         boolean changed = false;
 
         if (req.getTitle() != null) {
             String t = req.getTitle().trim();
             if (t.isEmpty()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Title cannot be empty");
+                throw new IllegalArgumentException("Title cannot be empty");
             }
             todo.setTitle(t);
             changed = true;
@@ -85,7 +86,8 @@ public class TodoService {
         }
 
         if (changed) {
-            log.info("Todo updated: user={}, id={}, title={}, completed={}", username, todo.getId(), todo.getTitle(), todo.isCompleted());
+            log.info("Todo updated: user={}, id={}, title={}, completed={}",
+                    username, todo.getId(), todo.getTitle(), todo.isCompleted());
         }
 
         return todo; // entity is managed; transaction will flush changes
@@ -93,11 +95,11 @@ public class TodoService {
 
     public void delete(String username, Long id) {
         if (id == null || id <= 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid todo id");
+            throw new IllegalArgumentException("Invalid todo id");
         }
 
         Todo todo = todoRepository.findByIdAndOwnerUsername(id, username)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Todo not found"));
+                .orElseThrow(() -> new NotFoundException("Todo not found"));
 
         todoRepository.delete(todo);
         log.info("Todo deleted: user={}, id={}", username, id);
