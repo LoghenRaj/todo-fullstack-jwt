@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api.js";
 import { clearToken } from "../auth.js";
@@ -8,16 +8,39 @@ export default function Todos() {
 
   const [todos, setTodos] = useState([]);
   const [title, setTitle] = useState("");
+
+  const [q, setQ] = useState("");
+  const [filter, setFilter] = useState("all"); // all | open | done
+  const [sortBy, setSortBy] = useState("id"); // id | title | completed
+  const [dir, setDir] = useState("desc"); // asc | desc
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
 
-  async function loadTodos() {
+  const completedParam = useMemo(() => {
+    if (filter === "open") return false;
+    if (filter === "done") return true;
+    return undefined; // omit param for "all"
+  }, [filter]);
+
+  async function loadTodos(signal) {
     setError("");
     setLoading(true);
+
     try {
-      const res = await api.get("/api/todos");
+      const params = {
+        q: q.trim() ? q.trim() : undefined,
+        completed: completedParam,
+        sort: sortBy,
+        dir,
+      };
+
+      const res = await api.get("/api/todos", { params, signal });
       setTodos(res.data);
     } catch (e) {
+      // Axios abort/cancel can throw; ignore those
+      if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
+
       console.error(e);
       setError("Failed to load todos");
     } finally {
@@ -25,9 +48,16 @@ export default function Todos() {
     }
   }
 
+  // Small debounce so typing in search doesn’t spam the backend
   useEffect(() => {
-    loadTodos();
-  }, []);
+    const controller = new AbortController();
+    const t = setTimeout(() => loadTodos(controller.signal), 250);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, completedParam, sortBy, dir]);
 
   async function createTodo(e) {
     e.preventDefault();
@@ -36,11 +66,11 @@ export default function Todos() {
 
     setError("");
     try {
-      const res = await api.post("/api/todos", { title: t });
-      setTodos((prev) => [res.data, ...prev]);
+      await api.post("/api/todos", { title: t });
       setTitle("");
-    } catch (e) {
-      console.error(e);
+      await loadTodos();
+    } catch (e2) {
+      console.error(e2);
       setError("Failed to create todo");
     }
   }
@@ -48,10 +78,8 @@ export default function Todos() {
   async function toggleTodo(todo) {
     setError("");
     try {
-      const res = await api.put(`/api/todos/${todo.id}`, {
-        completed: !todo.completed,
-      });
-      setTodos((prev) => prev.map((x) => (x.id === todo.id ? res.data : x)));
+      await api.put(`/api/todos/${todo.id}`, { completed: !todo.completed });
+      await loadTodos();
     } catch (e) {
       console.error(e);
       setError("Failed to update todo");
@@ -62,7 +90,7 @@ export default function Todos() {
     setError("");
     try {
       await api.delete(`/api/todos/${id}`);
-      setTodos((prev) => prev.filter((x) => x.id !== id));
+      await loadTodos();
     } catch (e) {
       console.error(e);
       setError("Failed to delete todo");
@@ -75,60 +103,95 @@ export default function Todos() {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: "40px auto", padding: 16 }}>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <h2>Todos</h2>
-        <button onClick={logout}>Logout</button>
-      </div>
+    <div className="page">
+      <div className="card card-wide">
+        <div className="headerRow">
+          <div>
+            <h1 style={{ marginBottom: 6 }}>Todos</h1>
+            <div className="muted" style={{ marginTop: 0 }}>
+              Search, filter, and sort your tasks.
+            </div>
+          </div>
 
-      {error ? (
-        <div style={{ margin: "12px 0", color: "crimson" }}>{error}</div>
-      ) : null}
+          <button className="secondary" onClick={logout}>
+            Logout
+          </button>
+        </div>
 
-      <form onSubmit={createTodo} style={{ display: "flex", gap: 8 }}>
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="New todo title..."
-          style={{ flex: 1, padding: 10 }}
-        />
-        <button type="submit">Add</button>
-      </form>
+        {error ? <div className="error">{error}</div> : null}
 
-      <div style={{ marginTop: 16 }}>
-        {loading ? (
-          <div>Loading...</div>
-        ) : todos.length === 0 ? (
-          <div>No todos yet.</div>
-        ) : (
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {todos.map((t) => (
-              <li
-                key={t.id}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "10px 0",
-                  borderBottom: "1px solid #ddd",
-                }}
-              >
-                <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <input
-                    type="checkbox"
-                    checked={t.completed}
-                    onChange={() => toggleTodo(t)}
-                  />
-                  <span style={{ textDecoration: t.completed ? "line-through" : "none" }}>
-                    {t.title}
-                  </span>
-                </label>
+        <div className="toolbar">
+          <div className="toolbarItem">
+            <label className="toolbarLabel">Search</label>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by title..."
+            />
+          </div>
 
-                <button onClick={() => deleteTodo(t.id)}>Delete</button>
-              </li>
-            ))}
-          </ul>
-        )}
+          <div className="toolbarItem">
+            <label className="toolbarLabel">Filter</label>
+            <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+              <option value="all">All</option>
+              <option value="open">Incomplete</option>
+              <option value="done">Completed</option>
+            </select>
+          </div>
+
+          <div className="toolbarItem">
+            <label className="toolbarLabel">Sort</label>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <option value="id">Created (id)</option>
+              <option value="title">Title</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+
+          <div className="toolbarItem">
+            <label className="toolbarLabel">Direction</label>
+            <select value={dir} onChange={(e) => setDir(e.target.value)}>
+              <option value="desc">Desc</option>
+              <option value="asc">Asc</option>
+            </select>
+          </div>
+        </div>
+
+        <form onSubmit={createTodo} className="row" style={{ marginTop: 14 }}>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="New todo title..."
+          />
+          <button type="submit">Add</button>
+        </form>
+
+        <div style={{ marginTop: 14 }}>
+          {loading ? (
+            <div className="muted">Loading...</div>
+          ) : todos.length === 0 ? (
+            <div className="muted">No todos yet.</div>
+          ) : (
+            <ul className="list">
+              {todos.map((t) => (
+                <li key={t.id} className="item">
+                  <label className="checkbox">
+                    <input
+                      type="checkbox"
+                      checked={t.completed}
+                      onChange={() => toggleTodo(t)}
+                    />
+                    <span className={t.completed ? "done" : ""}>{t.title}</span>
+                  </label>
+
+                  <button className="danger" onClick={() => deleteTodo(t.id)}>
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

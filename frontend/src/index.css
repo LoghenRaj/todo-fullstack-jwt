@@ -20,18 +20,18 @@ body {
   max-width: 520px;
   background: #111827;
   border: 1px solid #1f2937;
-  border-radius: 12px;
+  border-radius: 14px;
   padding: 20px;
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.45);
+}
+
+.card-wide {
+  max-width: 1100px;
 }
 
 h1 {
   margin: 0 0 16px;
-  font-size: 22px;
-}
-
-.form {
-  display: grid;
-  gap: 12px;
+  font-size: 26px;
 }
 
 label {
@@ -40,7 +40,8 @@ label {
   font-size: 14px;
 }
 
-input {
+input,
+select {
   background: #0b1220;
   border: 1px solid #1f2937;
   border-radius: 10px;
@@ -52,8 +53,9 @@ input {
 button {
   border: 0;
   border-radius: 10px;
-  padding: 10px 12px;
+  padding: 10px 14px;
   cursor: pointer;
+  font-weight: 600;
 }
 
 button.secondary {
@@ -69,6 +71,31 @@ button.danger {
 button:not(.secondary):not(.danger) {
   background: #2563eb;
   color: #fff;
+}
+
+.headerRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.toolbar {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 0.9fr 0.7fr;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.toolbarItem {
+  display: grid;
+  gap: 6px;
+}
+
+.toolbarLabel {
+  font-size: 13px;
+  color: #9ca3af;
 }
 
 .row {
@@ -98,9 +125,9 @@ button:not(.secondary):not(.danger) {
 .list {
   list-style: none;
   padding: 0;
-  margin: 14px 0 0;
+  margin: 10px 0 0;
   display: grid;
-  gap: 10px;
+  gap: 12px;
 }
 
 .item {
@@ -109,8 +136,8 @@ button:not(.secondary):not(.danger) {
   justify-content: space-between;
   gap: 12px;
   border: 1px solid #1f2937;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 14px;
+  padding: 12px 14px;
   background: #0b1220;
 }
 
