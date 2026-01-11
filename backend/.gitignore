@@ -31,3 +31,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Uploaded files (generated at runtime)
+uploads/
+backend/uploads/
+
+# Local downloaded test artifact
+downloaded-test.jpg
