@@ -1,68 +1,73 @@
-# Todo Full-Stack (Spring Boot + React) — JWT Auth
+# todo-fullstack-jwt
 
-A full-stack Todo application built for a technical assignment.
+Full-stack Todo application:
+- **Backend:** Spring Boot (JWT Auth, MySQL, REST API)
+- **Frontend:** React (Vite) UI
 
-- Backend: Java Spring Boot + REST API + MySQL
-- Frontend: React (Vite) — separated project folder
-- Auth: Register/Login with JWT (Bearer token)
-- Features: User-specific CRUD for Todos (users do not see each other’s todos)
+## Features
 
-## Assignment Requirements Coverage
+### Core
+- User authentication (JWT)
+- Todo CRUD (create/list/update/delete)
+- Per-user data isolation (each user only sees their own todos)
 
-This project meets the “must-have” requirements:
-- Backend (Spring Boot): Register/Login, CRUD, Database (SQL), REST API:contentReference[oaicite:2]{index=2}
-- Frontend separated from backend, using React framework:contentReference[oaicite:3]{index=3}
-- Git version control with clear commit history:contentReference[oaicite:4]{index=4}
-Bonus implemented: JWT Authentication:contentReference[oaicite:5]{index=5}
+### Bonus
+- Search / Filter / Sort todos:
+  - `GET /api/todos?q=keyword`
+  - `GET /api/todos?completed=true|false`
+  - `GET /api/todos?sort=id|title|completed&dir=asc|desc`
+- Request logging (method/path/status/duration)
+- Image upload (per user):
+  - Upload `POST /api/files` (multipart)
+  - List `GET /api/files`
+  - View/Download `GET /api/files/{id}`
+  - Delete `DELETE /api/files/{id}`
 
 ---
 
 ## Tech Stack
-
-### Backend
 - Java 17, Spring Boot
-- Spring Security (JWT)
-- Spring Data JPA + MySQL
-
-### Frontend
-- React (Vite)
+- Spring Security + JWT
+- MySQL
+- React + Vite
 - Axios
-- React Router DOM
 
 ---
 
 ## Project Structure
 
 todo-fullstack-jwt/
-backend/ # Spring Boot API
-frontend/ # React (Vite) UI
-
-
+backend/ Spring Boot API
+frontend/ React (Vite) UI
 
 
 ---
 
-## Configuration (IMPORTANT)
+## Backend Setup (Spring Boot)
 
-### Backend local config (not committed)
-This project uses a local profile file that must NOT be pushed to Git:
+### 1) Create local config (not committed)
+
+This project uses a local profile file which must NOT be pushed to Git:
 
 `backend/src/main/resources/application-local.properties`
 
-Create it (or edit your existing one) with your own values:
+You can copy from the example file if provided:
+`backend/src/main/resources/application-local.properties.example`
+
+Example:
 
 ```properties
-# MySQL
+# DB (LOCAL)
 spring.datasource.url=jdbc:mysql://localhost:3306/todo_app
-spring.datasource.username=root
+spring.datasource.username=todo_user
 spring.datasource.password=YOUR_PASSWORD
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
-# JPA
-spring.jpa.hibernate.ddl-auto=update
-
-# JWT (HS256 needs 32+ chars secret)
+# JWT (LOCAL)
 app.jwt.secret=CHANGE_ME_TO_A_LONG_RANDOM_SECRET_AT_LEAST_32_CHARS
 app.jwt.expiration-ms=86400000
 
-# Profile
-spring.profiles.active=local
+# Optional
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.open-in-view=false
